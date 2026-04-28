@@ -482,3 +482,4 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+lab-proxy-manager/src/WebServer/appsettings.json
