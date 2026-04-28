@@ -1,0 +1,65 @@
+services:
+  postgres:
+    container_name: proxy-postgres
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - ${POSTGRES_PORT}:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  collector:
+    container_name: proxy-collector
+    build:
+      context: .
+      dockerfile: Collector/Dockerfile
+    restart: unless-stopped
+    ports:
+      - ${COLLECTOR_PORT}:8081
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      # внутри compose-сети ходим по имени сервиса, порт — внутренний 5432
+      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      ApiKey: ${COLLECTOR_API_KEY}
+      ASPNETCORE_URLS: "http://+:8081"
+      Daemon__IntervalSeconds: ${DAEMON_INTERVAL_SECONDS}
+      Daemon__TimeoutSeconds: ${DAEMON_TIMEOUT_SECONDS}
+      Daemon__TestUrl: ${DAEMON_TEST_URL}
+      Daemon__MaxParallel: ${DAEMON_MAX_PARALLEL}
+      Daemon__BatchSize: ${DAEMON_BATCH_SIZE}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  webserver:
+    container_name: proxy-webserver
+    build:
+      context: .
+      dockerfile: WebServer/Dockerfile
+    restart: unless-stopped
+    ports:
+      - ${WEBSERVER_PORT}:8080
+    environment:
+      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      # к collector обращаемся по имени сервиса и его ВНУТРЕННЕМУ порту
+      Collector__BaseUrl: "http://collector:8080"
+      Collector__ApiKey: ${COLLECTOR_API_KEY}
+      Cors__AllowedOrigin: ${CORS_ALLOWED_ORIGIN}
+      ASPNETCORE_URLS: "http://+:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      collector:
+        condition: service_started
+
+volumes:
+  postgres_data:
