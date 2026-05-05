@@ -1,3 +1,6 @@
+using Domain.Models;
+using WebServer.DTOs;
+
 namespace WebServer.Mappings;
 
 public static class ProxyMapper
@@ -23,7 +26,6 @@ public static class ProxyMapper
         Port = dto.Port,
         Protocol = dto.Protocol,
         ResponseTimeMs = dto.ResponseTimeMs,
-        Status = dto.Status,
         LastChecked = dto.LastChecked
     };
 }

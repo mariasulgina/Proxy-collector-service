@@ -16,5 +16,5 @@ public class CreateProxyDto
     public string Ip { get; set; } = string.Empty;
     public int Port { get; set; }
     public string Protocol { get; set; } = "HTTP";
-    public int ResponseTimeMs { get; set; }
+    public int ResponseTimeMs { get; set; } = 9999;
 }

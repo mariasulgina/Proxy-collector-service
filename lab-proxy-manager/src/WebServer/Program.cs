@@ -1,10 +1,13 @@
-using Infrastructure.Context;
 using Infrastructure.Repositories;
-using Domain.Repositories.Interfaces;
+using Infrastructure.Repositories.Interfaces;
 using WebServer.Services;
 using WebServer.Services.Interfaces;
 using WebServer.DTOs;
+using WebServer.Extensions; 
+using WebServer.Handlers; 
+using Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
+using Domain.Exceptions;
 
 var builder = WebApplication.CreateBuilder(args);
 

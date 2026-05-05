@@ -1,3 +1,10 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
+using Microsoft.OpenApi;
+using Microsoft.AspNetCore.Builder;
+using Domain.Models;
+using Microsoft.OpenApi.Models;  
+
 namespace WebServer.Extensions;
 
 public static class SwaggerExtensions
@@ -13,7 +20,7 @@ public static class SwaggerExtensions
         {
             options.SwaggerDoc("v1", new OpenApiInfo 
             { 
-                Title = "Collector API", 
+                Title = "WebServer API", 
                 Version = "v1" 
             });
 

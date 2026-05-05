@@ -1,3 +1,5 @@
+using WebServer.DTOs;  
+using WebServer.Services.Interfaces;
 namespace WebServer.Handlers;
 
 public static class ProxyHandlers

@@ -1,3 +1,6 @@
+using Infrastructure.Context; 
+using Microsoft.EntityFrameworkCore; 
+
 namespace WebServer.Extensions;
 
 public static class MigrationExtensions

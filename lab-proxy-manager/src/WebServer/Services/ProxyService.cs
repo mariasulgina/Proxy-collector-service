@@ -1,19 +1,19 @@
-using Domain.Models;
-using Domain.Repositories.Interfaces;
+using Infrastructure.Repositories.Interfaces;
 using WebServer.DTOs;
 using WebServer.Services.Interfaces;
 using WebServer.Mappings;
+using Domain.Models; 
 
 namespace WebServer.Services;
 
 public class ProxyService(IProxyRepository repository) : IProxyService
 {
-    public async Task<PagedResult<ProxyDto>> GetPageAsync(
+    public async Task<PagedResultDto<ProxyDto>> GetPageAsync(
         int page, int pageSize, string? status, string? protocol)
     {
         var result = await repository.GetPageAsync(page, pageSize, status, protocol);
 
-        return new PagedResult<ProxyDto>
+        return new PagedResultDto<ProxyDto>
         {
             Items = result.Items.Select(e => e.ToDto()).ToList(),
             TotalCount = result.TotalCount,
@@ -38,7 +38,7 @@ public class ProxyService(IProxyRepository repository) : IProxyService
             ResponseTimeMs = dto.ResponseTimeMs,
             LastChecked = DateTime.UtcNow
         };
-
+        
         await repository.AddAsync(proxy);
         return proxy.ToDto();
     }
