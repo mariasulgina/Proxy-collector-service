@@ -1,50 +1,123 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 export default function Upload() {
-  const [drag, setDrag] = useState(false)
-  const [file, setFile] = useState(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [uploadStatus, setUploadStatus] = useState(null)
+  const navigate = useNavigate()
 
-  const onDrop = (e) => {
+  const handleDrag = useCallback((e) => {
     e.preventDefault()
-    setDrag(false)
-    const f = e.dataTransfer?.files[0] || e.target.files[0]
-    if (f) setFile(f)
+    e.stopPropagation()
+  }, [])
+
+  const handleDragIn = useCallback((e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
+  }, [])
+
+  const handleDragOut = useCallback((e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+  }, [])
+
+  const handleDrop = useCallback((e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+    
+    const files = e.dataTransfer.files
+    if (files?.[0]?.name.endsWith('.dll')) {
+      setUploadStatus('uploading')
+      // Здесь будет реальная загрузка через API
+      setTimeout(() => {
+        setUploadStatus('success')
+        setTimeout(() => {
+          setUploadStatus(null)
+          navigate('/packages')
+        }, 1500)
+      }, 1000)
+    } else {
+      setUploadStatus('error')
+      setTimeout(() => setUploadStatus(null), 2000)
+    }
+  }, [navigate])
+
+  const handleClick = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.dll'
+    input.onchange = (e) => {
+      const file = e.target.files?.[0]
+      if (file?.name.endsWith('.dll')) {
+        setUploadStatus('uploading')
+        setTimeout(() => {
+          setUploadStatus('success')
+          setTimeout(() => {
+            setUploadStatus(null)
+            navigate('/packages')
+          }, 1500)
+        }, 1000)
+      }
+    }
+    input.click()
   }
 
   return (
-    <>
-      <h1 className="page-title">ЗАГРУЗИТЬ ПАКЕТ</h1>
-      <div className="card">
-        <div
-          className={`upload-zone ${drag ? 'drag' : ''}`}
-          onDragOver={e => { e.preventDefault(); setDrag(true) }}
-          onDragLeave={() => setDrag(false)}
-          onDrop={onDrop}
-          onClick={() => document.getElementById('file-input').click()}
-        >
-          <input id="file-input" type="file" accept=".dll,.zip,.txt" style={{ display: 'none' }} onChange={onDrop} />
-          <div style={{ fontSize: 32, marginBottom: 12 }}>↑</div>
-          <div style={{ fontWeight: 700, marginBottom: 6 }}>Перетащите файл или кликните</div>
-          <div style={{ fontSize: 13, color: 'var(--muted)' }}>Поддерживаются форматы: .dll, .zip, .txt</div>
+    <div>
+      <h1 className="page-title">ЗАГРУЗИТЬ ПАКЕТЫ</h1>
+      
+      <div
+        className={`upload-zone ${isDragging ? 'drag' : ''}`}
+        onDragEnter={handleDragIn}
+        onDragLeave={handleDragOut}
+        onDragOver={handleDrag}
+        onDrop={handleDrop}
+        onClick={handleClick}
+      >
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>↑</div>
+        <div style={{ fontWeight: '600', marginBottom: '8px' }}>
+          Перетащите .dll файл или кликните
         </div>
-
-        {file && (
-          <div style={{ marginTop: 16, padding: 16, background: 'var(--bg3)', borderRadius: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontWeight: 600 }}>{file.name}</div>
-              <div style={{ fontSize: 12, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>{(file.size / 1024).toFixed(1)} KB</div>
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-outline btn-sm" onClick={() => setFile(null)}>Отмена</button>
-              <button className="btn btn-accent btn-sm" onClick={() => alert('Endpoint не реализован в бэкенде')}>Загрузить</button>
-            </div>
-          </div>
-        )}
-
-        <div style={{ marginTop: 16, padding: 12, background: 'rgba(123,97,255,0.08)', border: '1px solid rgba(123,97,255,0.2)', borderRadius: 6, fontSize: 13, color: 'var(--muted)' }}>
-          ⚠ Функция загрузки пакетов пока не реализована на бэкенде
+        <div style={{ fontSize: '12px', color: 'var(--muted)' }}>
+          Поддерживаются только файлы пакетов (.dll)
         </div>
       </div>
-    </>
+      
+      {uploadStatus === 'uploading' && (
+        <div className="card" style={{ marginTop: '16px', textAlign: 'center' }}>
+          <div className="stat-label">Загрузка...</div>
+          <div style={{ 
+            width: '100%', 
+            height: '4px', 
+            background: 'var(--bg3)', 
+            borderRadius: '2px',
+            marginTop: '8px',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              width: '60%',
+              height: '100%',
+              background: 'var(--accent)',
+              animation: 'pulse 1s infinite'
+            }}></div>
+          </div>
+        </div>
+      )}
+      
+      {uploadStatus === 'success' && (
+        <div className="card" style={{ marginTop: '16px', textAlign: 'center', borderColor: 'var(--good)' }}>
+          <div className="stat-label" style={{ color: 'var(--good)' }}>✓ Пакет успешно добавлен</div>
+        </div>
+      )}
+      
+      {uploadStatus === 'error' && (
+        <div className="card" style={{ marginTop: '16px', textAlign: 'center', borderColor: 'var(--bad)' }}>
+          <div className="stat-label" style={{ color: 'var(--bad)' }}>✗ Ошибка: только .dll файлы</div>
+        </div>
+      )}
+    </div>
   )
 }

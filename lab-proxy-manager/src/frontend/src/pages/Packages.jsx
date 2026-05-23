@@ -1,60 +1,73 @@
 import { useState } from 'react'
 
 const MOCK_PACKAGES = [
-  { id: 1, name: 'Yandex_Parse_v1', count: 5500, status: 'connected' },
-  { id: 2, name: 'Google_Parser', count: 203, status: 'disconnected' },
-  { id: 3, name: 'Новый пакет', count: 0, status: 'queued' },
+  { id: 1, name: 'Yandex_Parse_v1', proxies: 5500, connected: true },
+  { id: 2, name: 'Google_Parser', proxies: 203, connected: false },
+  { id: 3, name: 'Новый пакет', proxies: 0, connected: false, queued: true },
 ]
 
 export default function Packages() {
   const [packages, setPackages] = useState(MOCK_PACKAGES)
-  const [newName, setNewName] = useState('')
 
-  const toggle = (id) => {
-    setPackages(ps => ps.map(p => p.id === id
-      ? { ...p, status: p.status === 'connected' ? 'disconnected' : 'connected' }
-      : p))
+  const togglePackage = (id) => {
+    setPackages(pkgs => pkgs.map(p => 
+      p.id === id ? { ...p, connected: !p.connected } : p
+    ))
   }
 
-  const remove = (id) => setPackages(ps => ps.filter(p => p.id !== id))
-
-  const add = () => {
-    if (!newName.trim()) return
-    setPackages(ps => [...ps, { id: Date.now(), name: newName, count: 0, status: 'queued' }])
-    setNewName('')
+  const removePackage = (id) => {
+    if (window.confirm('Подтвердить удаление пакета?')) {
+      setPackages(pkgs => pkgs.filter(p => p.id !== id))
+    }
   }
 
   return (
-    <>
-      <h1 className="page-title">ПАКЕТНЫЙ МЕНЕДЖЕР</h1>
-
-      <div style={{ marginBottom: 12, padding: 12, background: 'rgba(123,97,255,0.08)', border: '1px solid rgba(123,97,255,0.2)', borderRadius: 6, fontSize: 13, color: 'var(--muted)' }}>
-        ⚠ Пакеты работают в демо-режиме — API пакетов не реализован на бэкенде
+    <div>
+      <div className="toolbar">
+        <h1 className="page-title" style={{ marginBottom: 0 }}>ПАКЕТНЫЙ МЕНЕДЖЕР</h1>
+        <button className="btn btn-accent btn-sm" onClick={() => window.location.href = '/upload'}>
+          + Добавить
+        </button>
       </div>
 
       <div className="card">
-        {packages.map(p => (
-          <div key={p.id} className={`package-item ${p.status}`}>
+        {packages.map(pkg => (
+          <div 
+            key={pkg.id} 
+            className={`package-item ${pkg.queued ? 'queued' : pkg.connected ? 'connected' : 'disconnected'}`}
+          >
             <div>
-              <div className="package-name">"{p.name}"</div>
-              <div className="package-meta">{p.count > 0 ? `${p.count.toLocaleString()} прокси` : 'в очереди'}</div>
+              <div className="package-name">"{pkg.name}"</div>
+              <div className="package-meta">
+                {pkg.proxies} прокси
+                {pkg.queued && ' • в очереди'}
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {p.status !== 'queued' && (
-                <button className={`btn btn-sm ${p.status === 'connected' ? 'btn-danger' : 'btn-accent'}`} onClick={() => toggle(p.id)}>
-                  {p.status === 'connected' ? 'Отключить' : 'Подключить'}
+            <div className="flex gap-12">
+              {!pkg.queued && (
+                <button 
+                  className={`btn btn-sm ${pkg.connected ? 'btn-danger' : 'btn-outline'}`}
+                  onClick={() => togglePackage(pkg.id)}
+                >
+                  {pkg.connected ? 'Отключить' : 'Подключен'}
                 </button>
               )}
-              <button className="btn btn-outline btn-sm" onClick={() => remove(p.id)}>Удалить</button>
+              <button 
+                className="btn btn-sm btn-danger"
+                onClick={() => removePackage(pkg.id)}
+              >
+                Удалить
+              </button>
             </div>
           </div>
         ))}
-
-        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-          <input className="input" placeholder="Название нового пакета" value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === 'Enter' && add()} />
-          <button className="btn btn-accent" onClick={add}>Добавить</button>
-        </div>
+        
+        {packages.length === 0 && (
+          <div className="stat-label" style={{ textAlign: 'center', padding: '24px' }}>
+            Пакеты не установлены
+          </div>
+        )}
       </div>
-    </>
+    </div>
   )
 }

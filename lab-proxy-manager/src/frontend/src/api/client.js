@@ -1,5 +1,5 @@
 const BASE = '/api'
-const API_KEY = import.meta.env.VITE_API_KEY || 'super_secret_key_777'
+const API_KEY = import.meta.env.VITE_API_KEY || 'example-api-key'
 
 const headers = {
   'Content-Type': 'application/json',
@@ -10,7 +10,9 @@ async function request(path, options = {}) {
   const res = await fetch(BASE + path, { headers, ...options })
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
   if (res.status === 204) return null
-  return res.json()
+  const text = await res.text()
+  if (!text) return null
+  try { return JSON.parse(text) } catch { return text }
 }
 
 // Proxies
@@ -27,8 +29,15 @@ export const addProxy = (dto) =>
 export const deleteProxy = (id) =>
   request(`/proxies/${id}`, { method: 'DELETE' })
 
-// Daemon
 export const pingCollector = () => request('/collector/ping')
-export const getDaemonStatus = () => request('/daemon/status')
+
+export const getDaemonStatus = async () => {
+  const raw = await request('/daemon/status')
+  const obj = typeof raw === 'string' ? JSON.parse(raw) : raw
+  return {
+    isRunning: obj.status === 'Running' || obj.status === 'RUNNING'
+  }
+}
+
 export const startDaemon = () => request('/daemon/start', { method: 'POST' })
-export const stopDaemon = () => request('/daemon/stop', { method: 'POST' })
+export const stopDaemon  = () => request('/daemon/stop',  { method: 'POST' })
