@@ -19,7 +19,7 @@ services:
     container_name: proxy-collector
     build:
       context: .
-      dockerfile: Collector/Dockerfile
+      dockerfile: backend/Collector/Dockerfile
     restart: unless-stopped
     ports:
       - "${COLLECTOR_PORT}:8080"
@@ -36,20 +36,21 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      webserver:
+        condition: service_started
 
   webserver:
     container_name: proxy-webserver
     build:
       context: .
-      dockerfile: WebServer/Dockerfile
+      dockerfile: backend/WebServer/Dockerfile
     restart: unless-stopped
     ports:
       - "${WEBSERVER_PORT}:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ApiKey: ${COLLECTOR_API_KEY} 
+      ApiKey: ${COLLECTOR_API_KEY}
       ConnectionStrings__Default: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
-      # к collector обращаемся по имени сервиса и его ВНУТРЕННЕМУ порту
       Collector__BaseUrl: "http://collector:8080"
       Collector__ApiKey: ${COLLECTOR_API_KEY}
       Cors__AllowedOrigin: ${CORS_ALLOWED_ORIGIN}
@@ -57,8 +58,17 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      collector:
-        condition: service_started
+        
+  frontend:
+    container_name: proxy-frontend
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - webserver
 
 volumes:
   postgres_data:
