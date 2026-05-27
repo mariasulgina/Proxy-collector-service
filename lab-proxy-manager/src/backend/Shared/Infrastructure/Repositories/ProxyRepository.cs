@@ -19,22 +19,7 @@ public class ProxyRepository(AppDbContext db) : IProxyRepository
 
     public async Task<PagedResult<Proxy>> GetPageAsync(int page, int pageSize, string? status, string? protocol)
     {
-        var query = db.Proxies.AsQueryable();
-
-        if (!string.IsNullOrEmpty(protocol))
-            query = query.Where(p => p.Protocol == protocol);
-
-        if (!string.IsNullOrEmpty(status))
-        {
-            query = status switch
-            {
-                "Good" => query.Where(p => p.ResponseTimeMs < 200),
-                "Normal" => query.Where(p => p.ResponseTimeMs >= 200 && p.ResponseTimeMs <= 500),
-                "Bad" => query.Where(p => p.ResponseTimeMs > 500 && p.ResponseTimeMs <= 1500),
-                "No connection" => query.Where(p => p.ResponseTimeMs > 1500),
-                _  => query
-            };
-        }
+        var query = BuildFilteredQuery(status, protocol);
 
         var totalCount = await query.CountAsync();
 
@@ -53,6 +38,11 @@ public class ProxyRepository(AppDbContext db) : IProxyRepository
         };
     }
 
+    public async Task<IEnumerable<Proxy>> GetAllFilteredAsync(string? status, string? protocol)
+        => await BuildFilteredQuery(status, protocol)
+            .OrderBy(p => p.Id)
+            .ToListAsync();
+
     public async Task<Proxy?> GetByIdAsync(int id) =>
         await db.Proxies.FindAsync(id);
 
@@ -70,6 +60,28 @@ public class ProxyRepository(AppDbContext db) : IProxyRepository
         }
     }
 
+    /// <summary>
+    /// Добавляет список прокси, пропуская дубликаты.
+    /// Возвращает количество реально добавленных записей.
+    /// </summary>
+    public async Task<int> AddRangeAsync(IEnumerable<Proxy> proxies)
+    {
+        var added = 0;
+        foreach (var proxy in proxies)
+        {
+            try
+            {
+                await AddAsync(proxy);
+                added++;
+            }
+            catch (DuplicateProxyException)
+            {
+                // пропускаем дубликат, продолжаем
+            }
+        }
+        return added;
+    }
+
     public async Task<bool> DeleteAsync(int id)
     {
         var proxy = await db.Proxies.FindAsync(id);
@@ -78,5 +90,41 @@ public class ProxyRepository(AppDbContext db) : IProxyRepository
         db.Proxies.Remove(proxy);
         await db.SaveChangesAsync();
         return true;
+    }
+
+    /// <summary>
+    /// Удаляет прокси по списку ID одним запросом.
+    /// Возвращает количество удалённых записей.
+    /// </summary>
+    public async Task<int> DeleteRangeAsync(IEnumerable<int> ids)
+    {
+        var idList = ids.ToList();
+        return await db.Proxies
+            .Where(p => idList.Contains(p.Id))
+            .ExecuteDeleteAsync();
+    }
+
+    // Выносим общую логику фильтрации, чтобы не дублировать её
+    // в GetPageAsync и GetAllFilteredAsync
+    private IQueryable<Proxy> BuildFilteredQuery(string? status, string? protocol)
+    {
+        var query = db.Proxies.AsQueryable();
+
+        if (!string.IsNullOrEmpty(protocol))
+            query = query.Where(p => p.Protocol == protocol);
+
+        if (!string.IsNullOrEmpty(status))
+        {
+            query = status switch
+            {
+                "Good"          => query.Where(p => p.ResponseTimeMs < 200),
+                "Normal"        => query.Where(p => p.ResponseTimeMs >= 200 && p.ResponseTimeMs <= 500),
+                "Bad"           => query.Where(p => p.ResponseTimeMs > 500 && p.ResponseTimeMs < 5000),
+                "No connection" => query.Where(p => p.ResponseTimeMs >= 5000),
+                _               => query
+            };
+        }
+
+        return query;
     }
 }

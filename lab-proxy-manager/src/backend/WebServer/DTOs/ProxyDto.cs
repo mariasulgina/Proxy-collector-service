@@ -18,3 +18,21 @@ public class CreateProxyDto
     public string Protocol { get; set; } = "HTTP";
     public int ResponseTimeMs { get; set; } = 9999;
 }
+
+/// <summary>
+/// Тело запроса для массового удаления прокси.
+/// </summary>
+public class DeleteByIdsDto
+{
+    public List<int> Ids { get; set; } = [];
+}
+
+/// <summary>
+/// Результат импорта CSV: сколько добавлено, сколько дублей, список строк с ошибками.
+/// </summary>
+public class CsvImportResultDto
+{
+    public int Imported { get; set; }
+    public int Duplicates { get; set; }
+    public List<string> Errors { get; set; } = [];
+}

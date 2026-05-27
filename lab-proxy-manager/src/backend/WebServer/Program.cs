@@ -1,13 +1,5 @@
-using Infrastructure.Repositories;
-using Infrastructure.Repositories.Interfaces;
-using WebServer.Services;
-using WebServer.Services.Interfaces;
-using WebServer.DTOs;
-using WebServer.Extensions; 
-using WebServer.Handlers; 
-using Infrastructure.Context;
-using Microsoft.EntityFrameworkCore;
-using Domain.Exceptions;
+using WebServer.Extensions;
+using WebServer.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,10 +9,14 @@ builder.AddCollectorClient();
 builder.AddCorsPolicy();
 builder.AddSwaggerDocumentation();
 
+builder.Services.AddAntiforgery();
+
 var app = builder.Build();
 
 app.ApplyMigrations();
 app.UseAppPipeline();
+
+app.UseAntiforgery();
 
 app.MapCollectorEndpoints();
 app.MapProxyEndpoints();

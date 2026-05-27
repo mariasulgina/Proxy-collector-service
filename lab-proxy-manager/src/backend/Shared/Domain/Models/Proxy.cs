@@ -15,7 +15,7 @@ public class Proxy
     {
         < 200 => "Good",
         <= 500 => "Normal",
-        <= 1500 => "Bad",
+        <= 5000 => "Bad",
         _ => "No connection"
     };
 }
