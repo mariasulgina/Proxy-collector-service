@@ -1,0 +1,74 @@
+services:
+  postgres:
+    container_name: proxy-postgres
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  collector:
+    container_name: proxy-collector
+    build:
+      context: .
+      dockerfile: backend/Collector/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${COLLECTOR_PORT}:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      ApiKey: ${COLLECTOR_API_KEY}
+      ASPNETCORE_URLS: "http://+:8080"
+      Daemon__IntervalSeconds: ${DAEMON_INTERVAL_SECONDS}
+      Daemon__TimeoutSeconds: ${DAEMON_TIMEOUT_SECONDS}
+      Daemon__TestUrl: ${DAEMON_TEST_URL}
+      Daemon__MaxParallel: ${DAEMON_MAX_PARALLEL}
+      Daemon__BatchSize: ${DAEMON_BATCH_SIZE}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      webserver:
+        condition: service_started
+
+  webserver:
+    container_name: proxy-webserver
+    build:
+      context: .
+      dockerfile: backend/WebServer/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${WEBSERVER_PORT}:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ApiKey: ${COLLECTOR_API_KEY}
+      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      Collector__BaseUrl: "http://collector:8080"
+      Collector__ApiKey: ${COLLECTOR_API_KEY}
+      Cors__AllowedOrigin: ${CORS_ALLOWED_ORIGIN}
+      ASPNETCORE_URLS: "http://+:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+        
+  frontend:
+    container_name: proxy-frontend
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - webserver
+
+volumes:
+  postgres_data:

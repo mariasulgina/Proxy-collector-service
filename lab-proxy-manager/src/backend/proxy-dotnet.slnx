@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/Shared/">
+    <Project Path="Shared/Domain/Domain.csproj" />
+    <Project Path="Shared/Infrastructure/Infrastructure.csproj" />
+  </Folder>
+  <Project Path="Collector/Collector.csproj" />
+  <Project Path="WebServer/WebServer.csproj" />
+</Solution>
