@@ -21,7 +21,7 @@ export default function App() {
       <BrowserRouter>
         <div className="layout">
           <aside className="sidebar">
-            <div className="sidebar-logo">PROXY COLLECTOR</div>
+            <div className="sidebar-logo">СБОРЩИК ПРОКСИ</div>
             {NAV.map(({ to, label, icon }) => (
               <NavLink
                 key={to}

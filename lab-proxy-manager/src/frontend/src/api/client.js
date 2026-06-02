@@ -6,8 +6,12 @@ const headers = {
   'X-Api-Key': API_KEY
 }
 
+// Склейке путей, проверка ошибок 500/401 и превращение в JSON
 async function request(path, options = {}) {
   const res = await fetch(BASE + path, { headers, ...options })
+  if (options.responseType === 'blob') {
+    return await res.blob()
+  }
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
   if (res.status === 204) return null
   const text = await res.text()
@@ -41,3 +45,35 @@ export const getDaemonStatus = async () => {
 
 export const startDaemon = () => request('/daemon/start', { method: 'POST' })
 export const stopDaemon  = () => request('/daemon/stop',  { method: 'POST' })
+
+// Import Proxies
+export const importProxiesCsv = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  return request('/proxies/import', {
+    method: 'POST',
+    headers: {
+      'X-Api-Key': API_KEY
+    },
+    body: formData
+  })
+}
+
+// Export Proxies
+export const exportFilteredProxiesCsv = (status = null, protocol = null) => {
+  const params = new URLSearchParams()
+  if (status) params.append('status', status)
+  if (protocol) params.append('protocol', protocol)
+  
+  return request(`/proxies/export?${params}`, { 
+    responseType: 'blob' 
+  })
+}
+
+// Export Proxy
+export const exportSingleProxyCsv = (id) => {
+  return request(`/proxies/${id}/export`, {
+    responseType: 'blob'
+  })
+}

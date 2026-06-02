@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getProxies, addProxy, deleteProxy } from '../api/client.js'
+import { getProxies, addProxy, deleteProxy, importProxiesCsv, exportFilteredProxiesCsv, exportSingleProxyCsv } from '../api/client.js'
 
 export default function Proxies() {
   const [items, setItems] = useState([])
@@ -40,13 +40,55 @@ export default function Proxies() {
     load()
   }
 
-  const handleExport = () => {
-    const rows = items
-      .filter(p => selected.length === 0 || selected.includes(p.id))
-      .map(p => `${p.ip}:${p.port}:${p.protocol}:${p.responseTimeMs}ms:${p.status}`)
-    navigator.clipboard.writeText(rows.join('\n'))
-    alert('Скопировано в буфер обмена')
-  }
+  const handleExport = async () => {
+    try {
+      let blob;
+      let fileName = '';
+
+      if (selected.length === 1) {
+        const singleId = selected[0];
+        blob = await exportSingleProxyCsv(singleId);
+        fileName = `proxy-${singleId}.csv`;
+      } else {
+        blob = await exportFilteredProxiesCsv(
+          filters.status || null,
+          filters.protocol || null
+        );
+        fileName = `proxies-export-${filters.protocol || 'all'}.csv`;
+      }
+
+      if (!blob || blob.size === 0) {
+        alert('Нет данных для экспорта');
+        return;
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fileName);
+      
+      document.body.appendChild(link);
+      link.click();
+      
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error(e);
+      alert(`Не удалось экспортировать файл: ${e.message}`);
+    }
+  };
+
+  const handleImportFile = async (file) => {
+    try {
+      const result = await importProxiesCsv(file);
+
+      alert(`Импорт успешно завершен! Успешно: ${result.successCount}, Ошибок: ${result.errorCount}`);
+      load();
+    } catch (e) {
+      console.error(e);
+      alert(`Не удалось импортировать файл: ${e.message}`);
+    }
+  };
 
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
 
@@ -55,12 +97,38 @@ export default function Proxies() {
       <div className="toolbar">
         <h1 className="page-title">ПРОКСИ</h1>
         <div className="toolbar-actions">
-          <button className="btn btn-outline btn-sm" onClick={handleExport}>Экспортировать</button>
-          <button className="btn btn-accent btn-sm" onClick={() => setShowAdd(true)}>+ Добавить</button>
-          {selected.length > 0 && (
-            <button className="btn btn-danger btn-sm" onClick={() => setShowDeleteModal(true)}>
-              Удалить ({selected.length})
-            </button>
+          {selected.length > 0 ? (
+            <>
+              <button className="btn btn-outline btn-sm" onClick={handleExport}>
+                📤 Экспортировать ({selected.length})
+              </button>
+              <button className="btn btn-danger btn-sm" onClick={() => setShowDeleteModal(true)}>
+                🗑 Удалить ({selected.length})
+              </button>
+            </>
+          ) : (
+            <>
+              <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}>
+                📥 Импортировать (.csv)
+                <input 
+                  type="file" 
+                  accept=".csv, text/csv, application/vnd.ms-excel"
+                  style={{ display: 'none' }} 
+                  onChange={async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    
+                    await handleImportFile(file);
+                    
+                    e.target.value = ''; 
+                  }} 
+                />
+              </label>
+              
+              <button className="btn btn-accent btn-sm" onClick={() => setShowAdd(true)}>
+                + Добавить
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -77,8 +145,10 @@ export default function Proxies() {
         <select className="input" value={filters.status}
           onChange={e => { setFilters(f => ({ ...f, status: e.target.value })); setPage(1) }}>
           <option value="">Все статусы</option>
-          <option value="ok">Хорошее</option>
-          <option value="dead">Недоступен</option>
+          <option value="Good">Хорошее</option>
+          <option value="Normal">Нормальное</option>
+          <option value="Bad">Плохое</option>
+          <option value="No connection">Нет соединения</option>
         </select>
       </div>
 
@@ -108,7 +178,7 @@ export default function Proxies() {
                   <td>{p.ip}</td>
                   <td>{p.port}</td>
                   <td>{p.protocol}</td>
-                  <td>{p.responseTimeMs}ms</td>
+                  <td>{p.responseTimeMs}мс</td>
                   <td><StatusCell status={p.status} ping={p.responseTimeMs} /></td>
                 </tr>
               ))
@@ -136,12 +206,22 @@ export default function Proxies() {
   )
 }
 
-function StatusCell({ status, ping }) {
-  const s = (status ?? '').toLowerCase()
-  if (s === 'ok' || s === 'active' || ping < 500) return <span className="status-good">● Хорошее</span>
-  if (s === 'dead' || s === 'error') return <span className="status-bad">● Недоступен</span>
-  return <span className="status-unknown">— {status || '—'}</span>
-}
+const STATUS_TRANSLATIONS = {
+  'Good': 'Отличный',
+  'Normal': 'Хороший',
+  'Bad': 'Плохой',
+  'No connection': 'Нет соединения'
+};
+
+const StatusCell = ({ status, ping }) => {
+  const statusRu = STATUS_TRANSLATIONS[status] || status;
+
+  return (
+    <span className={`status-badge ${status.toLowerCase().replace(' ', '-')}`}>
+      {statusRu} 
+    </span>
+  );
+};
 
 function AddModal({ onClose, onSave }) {
   const [ip, setIp] = useState('')

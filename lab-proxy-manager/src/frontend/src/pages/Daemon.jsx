@@ -110,9 +110,9 @@ export default function Daemon() {
             <span className="badge-dot"></span>
             {isRunning ? 'RUNNING' : 'STOPPED'}
           </span>
-          <span className="stat-label">
-            Collector: {collectorOnline ? '● онлайн' : '○ недоступен'}
-          </span>
+          {/* <span className="stat-label">
+            Collector: {collectorOnline ? 'онлайн' : 'недоступен'}
+          </span> */}
           {lastPing && (
             <span className="stat-label">Пинг: {lastPing}ms</span>
           )}

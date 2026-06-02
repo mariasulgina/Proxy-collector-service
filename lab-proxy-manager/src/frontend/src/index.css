@@ -1,11 +1,5 @@
-/* ============================================================================
-   СБОРЩИК ПРОКСИ — Стили интерфейса
-   Точное соответствие макету: ProxyCollector (3).pdf
-   ============================================================================ */
-
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:opsz,wght@8..60,400;600;700&display=swap');
 
-/* === Сброс и базовые настройки === */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -13,7 +7,6 @@
 }
 
 :root {
-  /* === ЦВЕТА ИЗ ДИЗАЙНА (точно как в макете) === */
   --text:          #E2E8F0;        /* 100% — основной текст */
   --white:         #FFFFFF;        /* 100% — белый */
   --black:         #1A1A1A;        /* 100% — чёрный текст */
@@ -135,7 +128,7 @@ html, body, #root {
   background: var(--bg);
 }
 
-/* === Typography — БОЛЬШИЕ КРАСИВЫЕ ЗАГОЛОВКИ === */
+/* БОЛЬШИЕ ЗАГОЛОВКИ */
 .page-title {
   font-family: var(--font-heading);
   font-size: 48px;
@@ -177,7 +170,7 @@ html, body, #root {
   margin-bottom: 20px;
 }
 
-/* === Stat Cards (Dashboard) === */
+/* Stat Cards (Dashboard) */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

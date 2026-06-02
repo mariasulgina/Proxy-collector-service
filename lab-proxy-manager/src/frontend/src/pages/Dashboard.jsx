@@ -41,7 +41,7 @@ export default function Dashboard() {
         </div>
         <div className="stat-card">
           <div className="stat-label">Активные пакеты</div>
-          <div className="stat-value">8 / 12</div>
+          <div className="stat-value">0 / 0</div>
         </div>
         <div className="stat-card">
           <div className="stat-label">Статус фоновой программы</div>
@@ -50,7 +50,7 @@ export default function Dashboard() {
             {daemonStatus}
           </span>
           {lastPing && (
-            <div className="stat-label">Последний пинг: {lastPing}ms</div>
+            <div className="stat-label">Последний пинг: {lastPing}мс</div>
           )}
         </div>
       </div>
